@@ -1,0 +1,9 @@
+{
+  "name": "Axion",
+  "description": "Axion is a powerful multi-modal AI assistant designed for seamless text, image, video, and voice interactions. A project made by Aashish Soni.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
