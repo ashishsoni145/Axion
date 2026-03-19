@@ -64,9 +64,9 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, initialDelay =
   throw lastError;
 }
 
-export const chatModel = "gemini-3-flash-preview";
+export const chatModel = "gemini-2.5-flash";
 export const mapsModel = "gemini-2.5-flash";
-export const imageModel = "gemini-3.1-flash-image-preview";
+export const imageModel = "gemini-2.5-flash-image";
 export const videoModel = "veo-3.1-fast-generate-preview";
 export const ttsModel = "gemini-2.5-flash-preview-tts";
 
