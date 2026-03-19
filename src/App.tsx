@@ -122,7 +122,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className={cn("h-screen flex overflow-hidden font-sans transition-colors", isDarkMode ? "bg-zinc-950" : "bg-zinc-50")}>
+      <div className={cn("h-[100dvh] flex overflow-hidden font-sans transition-colors", isDarkMode ? "bg-zinc-950" : "bg-zinc-50")}>
         <AnimatePresence mode="wait">
           {!user ? (
             <motion.div
@@ -165,7 +165,7 @@ export default function App() {
               key="app"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="flex-1 flex h-full"
+              className="flex-1 flex h-full min-w-0"
             >
               <Sidebar
                 sessions={sessions}

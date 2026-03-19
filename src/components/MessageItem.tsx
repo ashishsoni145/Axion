@@ -84,7 +84,7 @@ export function MessageItem({ message, isNew }: MessageItemProps) {
           </div>
         </div>
 
-        <div className="prose prose-zinc dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 leading-relaxed">
+        <div className="prose prose-zinc dark:prose-invert max-w-none text-zinc-800 dark:text-zinc-200 leading-relaxed break-words">
           {message.type === 'text' && (
             <div className="markdown-body relative">
               <Markdown
@@ -103,8 +103,8 @@ export function MessageItem({ message, isNew }: MessageItemProps) {
                     </blockquote>
                   ),
                   table: ({children}) => (
-                    <div className="overflow-x-auto my-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                      <table className="w-full text-sm text-left border-collapse">
+                    <div className="overflow-x-auto my-6 rounded-xl border border-zinc-200 dark:border-zinc-800 max-w-full">
+                      <table className="w-full text-sm text-left border-collapse min-w-[250px]">
                         {children}
                       </table>
                     </div>
@@ -142,8 +142,8 @@ export function MessageItem({ message, isNew }: MessageItemProps) {
                               )}
                             </button>
                           </div>
-                          <pre className="!bg-zinc-900 !p-4 overflow-x-auto whitespace-pre font-mono text-sm leading-relaxed scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
-                            <code className={cn(className, "text-zinc-100")} {...props}>
+                          <pre className="!bg-zinc-900 !p-4 overflow-x-auto whitespace-pre font-mono text-sm leading-relaxed scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent max-w-full">
+                            <code className={cn(className, "text-zinc-100 break-normal")} {...props}>
                               {children}
                             </code>
                           </pre>

@@ -297,30 +297,30 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
 
   return (
     <div className="flex-1 flex flex-col h-full min-w-0 bg-white dark:bg-zinc-950 transition-colors overflow-hidden">
-      <div className="h-14 sm:h-16 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between px-4 sm:px-6 shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="h-14 sm:h-16 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between px-2 sm:px-6 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={onOpenSidebar}
-            className="lg:hidden p-2 -ml-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
+            className="lg:hidden p-1.5 sm:p-2 -ml-1 sm:-ml-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
           >
-            <Menu size={20} />
+            <Menu size={18} className="sm:w-5 sm:h-5" />
           </button>
-          <Sparkles className="text-emerald-500" size={20} />
-          <h2 className="font-semibold text-zinc-900 dark:text-zinc-100">Axion</h2>
+          <Sparkles className="text-emerald-500" size={18} />
+          <h2 className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 truncate">Axion</h2>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={onToggleDarkMode}
-            className="p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all mr-2"
+            className="p-1.5 sm:p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
-            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            {isDarkMode ? <Sun size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Moon size={16} className="sm:w-[18px] sm:h-[18px]" />}
           </button>
           <button
             onClick={() => setUseThinking(!useThinking)}
             className={cn(
-              "p-2 rounded-lg transition-all flex items-center gap-2 text-xs font-medium",
+              "p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 sm:gap-2 text-xs font-medium",
               useThinking 
                 ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" 
                 : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
@@ -328,29 +328,29 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
             title="Thinking Mode"
           >
             <Brain size={16} />
-            <span className="hidden sm:inline">Thinking</span>
+            <span className="hidden md:inline">Thinking</span>
           </button>
           <button
             onClick={() => setUseSearch(!useSearch)}
             className={cn(
-              "p-2 rounded-lg transition-all flex items-center gap-2 text-xs font-medium",
+              "p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 sm:gap-2 text-xs font-medium",
               useSearch ? "bg-blue-100 text-blue-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
             )}
             title="Search Grounding"
           >
             <Search size={16} />
-            <span className="hidden sm:inline">Search</span>
+            <span className="hidden md:inline">Search</span>
           </button>
           <button
             onClick={() => setUseMaps(!useMaps)}
             className={cn(
-              "p-2 rounded-lg transition-all flex items-center gap-2 text-xs font-medium",
+              "p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 sm:gap-2 text-xs font-medium",
               useMaps ? "bg-red-100 text-red-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
             )}
             title="Maps Grounding"
           >
             <MapPin size={16} />
-            <span className="hidden sm:inline">Maps</span>
+            <span className="hidden md:inline">Maps</span>
           </button>
         </div>
       </div>
@@ -412,7 +412,7 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
       </div>
 
       <div className="p-3 sm:p-6 border-t border-zinc-100 dark:border-zinc-800">
-        <form onSubmit={handleSend} className="max-w-4xl mx-auto relative">
+        <form onSubmit={handleSend} className="max-w-4xl mx-auto relative w-full">
           {attachment && (
             <div className="absolute bottom-full mb-4 left-0 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-3">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800">

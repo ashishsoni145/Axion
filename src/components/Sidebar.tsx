@@ -70,7 +70,7 @@ export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat
       )}
 
       <div className={cn(
-        "fixed inset-y-0 left-0 w-80 bg-zinc-900 text-zinc-100 flex flex-col border-r border-zinc-800 z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
+        "fixed inset-y-0 left-0 w-[280px] sm:w-80 bg-zinc-900 text-zinc-100 flex flex-col border-r border-zinc-800 z-50 transition-transform duration-300 lg:relative lg:translate-x-0",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-4 flex items-center justify-between gap-2">
