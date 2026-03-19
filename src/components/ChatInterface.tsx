@@ -4,7 +4,7 @@ import { Message, ChatSession, ModelProvider } from '../types';
 import { MessageItem } from './MessageItem';
 import { generateChatResponse, generateImage, generateVideo, generateSpeech } from '../services/axion';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, where, onSnapshot, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Cpu } from 'lucide-react';
@@ -67,22 +67,27 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
   }, [isLoading]);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !auth.currentUser) return;
 
     const q = query(
       collection(db, 'sessions', sessionId, 'messages'),
-      orderBy('createdAt', 'asc')
+      where('userId', '==', auth.currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data({ serverTimestamps: 'estimate' }) } as Message));
+      msgs.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis() || Date.now();
+        const timeB = b.createdAt?.toMillis() || Date.now();
+        return timeA - timeB;
+      });
       setMessages(msgs);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, `sessions/${sessionId}/messages`);
     });
 
     return () => unsubscribe();
-  }, [sessionId]);
+  }, [sessionId, auth.currentUser]);
 
   useEffect(() => {
     if (scrollRef.current) {
