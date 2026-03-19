@@ -172,8 +172,14 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
       let mediaUrl = "";
 
       const lowerPrompt = currentInput.toLowerCase();
+      const isImageRequest = lowerPrompt.includes('generate image') || 
+                            lowerPrompt.includes('create image') || 
+                            lowerPrompt.includes('draw') || 
+                            lowerPrompt.includes('make an image') ||
+                            lowerPrompt.includes('generate a picture') ||
+                            lowerPrompt.includes('create a picture');
 
-      if (lowerPrompt.includes('generate image') || lowerPrompt.includes('create image') || lowerPrompt.includes('draw')) {
+      if (isImageRequest) {
         mediaUrl = await generateImage(currentInput);
         responseText = `Here is the image I generated for: "${currentInput}"`;
         responseType = 'image';
@@ -418,6 +424,24 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
           )}
 
           <div className="relative flex items-center gap-1 sm:gap-2 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-1.5 sm:p-2 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all">
+            <button
+              type="button"
+              onClick={() => {
+                if (input.trim()) {
+                  handleSend();
+                } else {
+                  setInput('Generate an image of ');
+                }
+              }}
+              className={cn(
+                "p-2 text-zinc-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl transition-colors",
+                (input.toLowerCase().includes('generate image') || input.toLowerCase().includes('create image') || input.toLowerCase().includes('draw')) && "text-emerald-500"
+              )}
+              title="Generate Image"
+            >
+              <ImageIcon size={18} className="sm:w-5 sm:h-5" />
+            </button>
+
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
