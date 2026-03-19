@@ -215,11 +215,11 @@ export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat
         )}
       </div>
 
-      <div className="p-4 border-t border-zinc-800 space-y-4">
+      <div className="p-3 border-t border-zinc-800 space-y-2">
         {isInstallable && (
           <button 
             onClick={install}
-            className="w-full flex items-center justify-between px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-200 text-xs font-bold uppercase tracking-wider transition-all border border-zinc-700/50 group"
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-200 text-xs font-bold uppercase tracking-wider transition-all border border-zinc-700/50 group"
           >
             <div className="flex items-center gap-2">
               <Download size={14} />
@@ -231,7 +231,7 @@ export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat
         {userProfile?.subscription !== 'pro' && (
           <button 
             onClick={onUpgrade}
-            className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl text-white text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-orange-900/20 group"
+            className="w-full flex items-center justify-between px-3 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl text-white text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-orange-900/20 group"
           >
             <div className="flex items-center gap-2">
               <Zap size={14} className="fill-white" />
@@ -243,7 +243,7 @@ export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat
         
         <button 
           onClick={onOpenProfile}
-          className="w-full flex items-center gap-3 px-2 py-3 hover:bg-zinc-800 rounded-xl transition-colors group text-left"
+          className="w-full flex items-center gap-3 px-2 py-2 hover:bg-zinc-800 rounded-xl transition-colors group text-left"
         >
           {user?.photoURL ? (
             <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full group-hover:ring-2 group-hover:ring-emerald-500 transition-all" referrerPolicy="no-referrer" />

@@ -4,7 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
-registerSW({ immediate: true });
+registerSW();
 
 declare global {
   interface Window {
