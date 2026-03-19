@@ -90,12 +90,16 @@ export default function App() {
 
     const q = query(
       collection(db, 'sessions'),
-      where('userId', '==', user.uid),
-      orderBy('updatedAt', 'desc')
+      where('userId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const sess = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatSession));
+      const sess = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data({ serverTimestamps: 'estimate' }) } as ChatSession));
+      sess.sort((a, b) => {
+        const timeA = a.updatedAt?.toMillis() || Date.now();
+        const timeB = b.updatedAt?.toMillis() || Date.now();
+        return timeB - timeA;
+      });
       setSessions(sess);
       
       // Auto-select first session if none selected

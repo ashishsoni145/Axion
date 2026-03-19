@@ -144,6 +144,8 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
       if (doc.exists()) {
         setUserProfile(doc.data());
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${auth.currentUser?.uid}`);
     });
 
     return () => unsubscribe();
@@ -621,7 +623,7 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
                 }
               }}
               placeholder="Ask Axion..."
-              className="flex-1 bg-transparent border-none focus:ring-0 text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 py-2 sm:py-3 resize-none max-h-32 min-h-[40px] text-sm sm:text-base"
+              className="flex-1 w-full bg-transparent border-none focus:ring-0 text-zinc-800 dark:text-zinc-100 placeholder:text-zinc-400 py-2 sm:py-3 resize-none max-h-32 min-h-[40px] text-sm sm:text-base"
               rows={1}
             />
 

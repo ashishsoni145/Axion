@@ -89,12 +89,12 @@ export function AuthPage({ isDarkMode, onToggleDarkMode }: AuthPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950 transition-colors">
+      <div className="min-h-screen w-full flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950 transition-colors">
       
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl p-8 sm:p-10 border border-zinc-200 dark:border-zinc-800 transition-colors relative overflow-hidden"
+        className="max-w-md w-full bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl p-6 sm:p-10 border border-zinc-200 dark:border-zinc-800 transition-colors relative overflow-hidden"
       >
         {/* Background Accents */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
@@ -257,7 +257,7 @@ export function AuthPage({ isDarkMode, onToggleDarkMode }: AuthPageProps) {
               <button 
                 type="button"
                 onClick={handleGoogleLogin}
-                className="flex items-center justify-center gap-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl py-3 text-sm font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="flex items-center justify-center gap-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-2xl py-3 text-sm font-semibold text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 <LogIn size={18} />
                 Continue with Google

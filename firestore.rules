@@ -52,12 +52,6 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isSessionOwner(sessionId) {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/sessions/$(sessionId)) &&
-             get(/databases/$(database)/documents/sessions/$(sessionId)).data.userId == request.auth.uid;
-    }
-
     function isAdmin() {
       return isAuthenticated() &&
         (
@@ -74,13 +68,19 @@ service cloud.firestore {
     // Domain Validators
     function isValidUser(data) {
       return data.keys().hasAll(['uid', 'email']) &&
+             data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'subscription', 'messageCount', 'imageCount', 'preferences', 'createdAt', 'role']) &&
              data.uid == request.auth.uid &&
              isValidEmail(data.email) &&
              (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 2000)) &&
              (!('subscription' in data) || (data.subscription in ['free', 'pro'])) &&
              (!('messageCount' in data) || (data.messageCount is int)) &&
+             (!('imageCount' in data) || (data.imageCount is int)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('role' in data) || data.role in ['user', 'admin']) &&
              (!('preferences' in data) || (
                data.preferences is map &&
+               data.preferences.keys().hasOnly(['notifications', 'language', 'publicProfile', 'dataTraining']) &&
                data.preferences.get('notifications', true) is bool &&
                data.preferences.get('language', 'English') is string &&
                data.preferences.get('publicProfile', false) is bool &&
@@ -90,30 +90,54 @@ service cloud.firestore {
 
     function isValidSession(data) {
       return data.keys().hasAll(['userId', 'title']) &&
+             data.keys().hasOnly(['userId', 'title', 'createdAt', 'updatedAt']) &&
              data.userId == request.auth.uid &&
-             data.title is string && data.title.size() > 0 && data.title.size() < 200;
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
     function isValidMessage(data) {
       return data.keys().hasAll(['sessionId', 'userId', 'role', 'content', 'type']) &&
+             data.keys().hasOnly(['sessionId', 'userId', 'role', 'content', 'type', 'mediaUrl', 'createdAt']) &&
              data.userId == request.auth.uid &&
              data.role in ['user', 'model'] &&
              data.type in ['text', 'image', 'video', 'audio'] &&
-             data.content is string && data.content.size() < 10000;
+             data.content is string && data.content.size() < 10000 &&
+             (!('mediaUrl' in data) || (data.mediaUrl is string && data.mediaUrl.size() < 2000000)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     function isValidMemory(data) {
       return data.keys().hasAll(['userId', 'fact']) &&
+             data.keys().hasOnly(['userId', 'fact', 'category', 'createdAt']) &&
              data.userId == request.auth.uid &&
-             data.fact is string && data.fact.size() > 0 && data.fact.size() < 1000;
+             data.fact is string && data.fact.size() > 0 && data.fact.size() < 1000 &&
+             (!('category' in data) || (data.category is string && data.category.size() < 100)) &&
+             (!('createdAt' in data) || data.createdAt is timestamp);
     }
 
     // Rules
     match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if isOwner(userId) && isValidUser(request.resource.data);
-      allow delete: if isOwner(userId);
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && 
+                    (!('role' in request.resource.data) || request.resource.data.role == 'user') &&
+                    (!('subscription' in request.resource.data) || request.resource.data.subscription == 'free');
+      allow update: if (isOwner(userId) && isValidUser(request.resource.data) &&
+                    request.resource.data.uid == resource.data.uid &&
+                    request.resource.data.email == resource.data.email &&
+                    request.resource.data.get('role', 'user') == resource.data.get('role', 'user') &&
+                    request.resource.data.get('subscription', 'free') == resource.data.get('subscription', 'free') &&
+                    request.resource.data.get('createdAt', null) == resource.data.get('createdAt', null) &&
+                    (
+                      request.resource.data.get('messageCount', 0) == resource.data.get('messageCount', 0) ||
+                      request.resource.data.get('messageCount', 0) == resource.data.get('messageCount', 0) + 1
+                    ) &&
+                    (
+                      request.resource.data.get('imageCount', 0) == resource.data.get('imageCount', 0) ||
+                      request.resource.data.get('imageCount', 0) == resource.data.get('imageCount', 0) + 1
+                    )) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
 
       match /memories/{memoryId} {
         allow read: if isOwner(userId);
@@ -124,16 +148,16 @@ service cloud.firestore {
     }
 
     match /sessions/{sessionId} {
-      allow read: if isOwner(resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || isAdmin();
       allow create: if isAuthenticated() && isValidSession(request.resource.data);
-      allow update: if isOwner(resource.data.userId) && isValidSession(request.resource.data);
-      allow delete: if isOwner(resource.data.userId);
+      allow update: if (isOwner(resource.data.userId) || isAdmin()) && isValidSession(request.resource.data);
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
 
       match /messages/{messageId} {
-        allow read: if isOwner(resource.data.userId);
+        allow read: if isOwner(resource.data.userId) || isAdmin();
         allow create: if isOwner(request.resource.data.userId) && isValidMessage(request.resource.data);
         allow update: if false; // Messages are immutable
-        allow delete: if isOwner(resource.data.userId);
+        allow delete: if isOwner(resource.data.userId) || isAdmin();
       }
     }
   }
