@@ -232,25 +232,13 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
         const imageCount = userProfile?.imageCount || 0;
         
         if (!isPro) {
-          if (isVideoRequest) {
-            setUpgradeReason({
-              title: 'Pro Feature',
-              description: "Video generation is exclusive to Axion Pro users. Upgrade now to bring your ideas to life!"
-            });
-            setShowUpgradeModal(true);
-            setIsLoading(false);
-            return;
-          }
-          
-          if (isImageRequest && imageCount >= 5) {
-            setUpgradeReason({
-              title: 'Free Trial Ended',
-              description: "You've used all 5 of your free image generations. Upgrade to Axion Pro for unlimited creative power!"
-            });
-            setShowUpgradeModal(true);
-            setIsLoading(false);
-            return;
-          }
+          setUpgradeReason({
+            title: 'Pro Feature',
+            description: `${isVideoRequest ? 'Video' : 'Image'} generation is exclusive to Axion Pro users. Upgrade now to unlock creative power!`
+          });
+          setShowUpgradeModal(true);
+          setIsLoading(false);
+          return;
         }
 
         if (isImageRequest) {
@@ -426,11 +414,7 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
             {isDarkMode ? <Sun size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Moon size={16} className="sm:w-[18px] sm:h-[18px]" />}
           </button>
           <button
-            onClick={() => {
-              if (checkProFeature('Thinking Mode')) {
-                setUseThinking(!useThinking);
-              }
-            }}
+            onClick={() => setUseThinking(!useThinking)}
             className={cn(
               "p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 sm:gap-2 text-xs font-medium relative",
               useThinking 
@@ -441,9 +425,6 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
           >
             <Brain size={16} />
             <span className="hidden md:inline">Thinking</span>
-            {userProfile?.subscription !== 'pro' && (
-              <div className="absolute -top-1 -right-1 bg-amber-500 text-[8px] text-white px-1 rounded-full">PRO</div>
-            )}
           </button>
           <button
             onClick={() => setUseSearch(!useSearch)}

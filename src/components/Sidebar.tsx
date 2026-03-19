@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MessageSquare, LogOut, User as UserIcon, Trash2, X, Edit2, Check, Brain } from 'lucide-react';
+import { Plus, MessageSquare, LogOut, User as UserIcon, Trash2, X, Edit2, Check, Brain, Zap, ArrowLeft, Download } from 'lucide-react';
 import { ChatSession } from '../types';
 import { cn } from '../lib/utils';
 import { auth, logout, db, handleFirestoreError, OperationType } from '../firebase';
 import { doc, updateDoc, collection, query, orderBy, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 interface SidebarProps {
   sessions: ChatSession[];
@@ -12,16 +13,29 @@ interface SidebarProps {
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
   onOpenProfile: () => void;
+  onUpgrade: () => void;
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession, onOpenProfile, isOpen, onClose }: SidebarProps) {
+export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession, onOpenProfile, onUpgrade, isOpen, onClose }: SidebarProps) {
   const user = auth.currentUser;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [showMemories, setShowMemories] = useState(false);
   const [memories, setMemories] = useState<{ id: string, fact: string }[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const { isInstallable, install } = usePWAInstall();
+
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribe = onSnapshot(doc(db, 'users', user.uid), (doc) => {
+      if (doc.exists()) {
+        setUserProfile(doc.data());
+      }
+    });
+    return () => unsubscribe();
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -201,10 +215,35 @@ export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat
         )}
       </div>
 
-      <div className="p-4 border-t border-zinc-800">
+      <div className="p-4 border-t border-zinc-800 space-y-4">
+        {isInstallable && (
+          <button 
+            onClick={install}
+            className="w-full flex items-center justify-between px-4 py-3 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-zinc-200 text-xs font-bold uppercase tracking-wider transition-all border border-zinc-700/50 group"
+          >
+            <div className="flex items-center gap-2">
+              <Download size={14} />
+              <span>Install App</span>
+            </div>
+          </button>
+        )}
+        
+        {userProfile?.subscription !== 'pro' && (
+          <button 
+            onClick={onUpgrade}
+            className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-600 rounded-xl text-white text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-all shadow-lg shadow-orange-900/20 group"
+          >
+            <div className="flex items-center gap-2">
+              <Zap size={14} className="fill-white" />
+              <span>Upgrade to Pro</span>
+            </div>
+            <ArrowLeft size={14} className="rotate-180 group-hover:translate-x-1 transition-transform" />
+          </button>
+        )}
+        
         <button 
           onClick={onOpenProfile}
-          className="w-full flex items-center gap-3 px-2 py-3 hover:bg-zinc-800 rounded-xl transition-colors group"
+          className="w-full flex items-center gap-3 px-2 py-3 hover:bg-zinc-800 rounded-xl transition-colors group text-left"
         >
           {user?.photoURL ? (
             <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full group-hover:ring-2 group-hover:ring-emerald-500 transition-all" referrerPolicy="no-referrer" />
@@ -213,7 +252,7 @@ export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat
               <UserIcon size={16} />
             </div>
           )}
-          <div className="flex-1 min-w-0 text-left">
+          <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate group-hover:text-emerald-400 transition-colors">{user?.displayName || 'User'}</p>
             <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
           </div>

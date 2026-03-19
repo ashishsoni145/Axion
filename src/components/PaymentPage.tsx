@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Check, Sparkles, Zap, Shield, Globe, MessageSquare, Bot, ArrowLeft, Loader2, ShieldCheck, Lock } from 'lucide-react';
+import { Check, Sparkles, Zap, Shield, Globe, MessageSquare, Bot, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { db, auth } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
-import { SimulatedCheckout } from './SimulatedCheckout';
 
 interface PaymentPageProps {
   onBack: () => void;
@@ -14,63 +13,25 @@ interface PaymentPageProps {
 export function PaymentPage({ onBack, onSuccess }: PaymentPageProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro'>('pro');
-  const [showSimulatedCheckout, setShowSimulatedCheckout] = useState(false);
 
   const handleSubscribe = async () => {
     if (!auth.currentUser) return;
     setIsProcessing(true);
     
+    // Simulate payment processing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     try {
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: auth.currentUser.uid,
-          userEmail: auth.currentUser.email,
-        }),
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        subscription: 'pro',
+        updatedAt: new Date()
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create checkout session');
-      }
-
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
-      } else {
-        throw new Error('No checkout URL received');
-      }
-    } catch (error: any) {
-      console.error("Failed to upgrade via Stripe:", error);
-      // If real stripe fails (likely due to missing keys), fallback to simulated
-      setShowSimulatedCheckout(true);
+      onSuccess();
+    } catch (error) {
+      console.error("Failed to upgrade:", error);
+      alert("Payment failed. Please try again.");
     } finally {
       setIsProcessing(false);
-    }
-  };
-
-  const handleSimulatedSuccess = async () => {
-    if (!auth.currentUser) return;
-    
-    try {
-      const response = await fetch('/api/simulate-payment-success', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: auth.currentUser.uid,
-        }),
-      });
-
-      if (response.ok) {
-        onSuccess();
-      }
-    } catch (error) {
-      console.error("Failed to update subscription:", error);
     }
   };
 
@@ -82,9 +43,10 @@ export function PaymentPage({ onBack, onSuccess }: PaymentPageProps) {
       description: 'Perfect for getting started',
       features: [
         '50 messages total',
+        'Access to Thinking AI',
         'Standard AI response speed',
         'Basic web search',
-        'Community support'
+        'No Image/Video generation'
       ],
       buttonText: 'Current Plan',
       disabled: true
@@ -92,11 +54,12 @@ export function PaymentPage({ onBack, onSuccess }: PaymentPageProps) {
     {
       id: 'pro',
       name: 'Axion Pro',
-      price: '$19',
+      price: '₹199',
       period: '/month',
       description: 'For power users who want more',
       features: [
         'Unlimited messages',
+        'Access to Thinking AI',
         'Priority AI response speed',
         'Advanced Maps & Search',
         'Image & Video generation',
@@ -210,14 +173,6 @@ export function PaymentPage({ onBack, onSuccess }: PaymentPageProps) {
             <p className="text-xs text-zinc-500 dark:text-zinc-400">Powered by the latest and greatest AI models.</p>
           </div>
         </div>
-
-        <SimulatedCheckout 
-          isOpen={showSimulatedCheckout}
-          onClose={() => setShowSimulatedCheckout(false)}
-          onSuccess={handleSimulatedSuccess}
-          planName="Axion Pro"
-          price="$19/month"
-        />
       </div>
     </div>
   );

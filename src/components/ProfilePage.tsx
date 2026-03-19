@@ -126,6 +126,13 @@ export function ProfilePage({ onBack, isDarkMode, onUpgrade }: ProfilePageProps)
     }
   };
 
+  const openModal = (modal: 'general' | 'privacy' | 'delete') => {
+    if (profile?.preferences) {
+      setPrefs(profile.preferences);
+    }
+    setActiveModal(modal);
+  };
+
   if (!user) return null;
 
   return (
@@ -241,7 +248,7 @@ export function ProfilePage({ onBack, isDarkMode, onUpgrade }: ProfilePageProps)
                 onClick={onUpgrade}
                 className="bg-white text-emerald-600 px-8 py-4 rounded-2xl font-bold hover:bg-emerald-50 transition-all shadow-lg whitespace-nowrap flex items-center gap-2"
               >
-                Upgrade Now — $19/mo
+                Upgrade Now — ₹199/mo
               </button>
             </div>
             {/* Decorative circles */}
@@ -259,13 +266,13 @@ export function ProfilePage({ onBack, isDarkMode, onUpgrade }: ProfilePageProps)
                 icon={<Settings size={18} />}
                 label="General Preferences"
                 description="Manage your language and interface settings"
-                onClick={() => setActiveModal('general')}
+                onClick={() => openModal('general')}
               />
               <SettingsItem 
                 icon={<Shield size={18} />}
                 label="Privacy & Security"
                 description="Control your data and account security"
-                onClick={() => setActiveModal('privacy')}
+                onClick={() => openModal('privacy')}
               />
               <button 
                 onClick={() => logout()}
@@ -351,11 +358,16 @@ export function ProfilePage({ onBack, isDarkMode, onUpgrade }: ProfilePageProps)
                         onChange={(e) => setPrefs(p => ({ ...p, language: e.target.value }))}
                         className="w-full bg-zinc-100 dark:bg-zinc-800 border-none rounded-xl text-sm p-3 focus:ring-2 focus:ring-emerald-500"
                       >
-                        <option>English</option>
-                        <option>Spanish</option>
-                        <option>French</option>
-                        <option>German</option>
-                        <option>Hindi</option>
+                        <option value="English">English</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="French">French</option>
+                        <option value="German">German</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Japanese">Japanese</option>
+                        <option value="Chinese">Chinese</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="Portuguese">Portuguese</option>
+                        <option value="Russian">Russian</option>
                       </select>
                     </div>
                   </div>
