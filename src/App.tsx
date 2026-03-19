@@ -56,6 +56,7 @@ export default function App() {
               updatedAt: serverTimestamp(),
               subscription: 'free',
               messageCount: 0,
+              imageCount: 0,
               preferences: {
                 notifications: true,
                 language: 'English',

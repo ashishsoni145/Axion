@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth, db, logout, handleFirestoreError, OperationType, googleProvider } from '../firebase';
 import { collection, query, where, getDocs, onSnapshot, orderBy, writeBatch, doc, deleteDoc, getDoc } from 'firebase/firestore';
 import { deleteUser, reauthenticateWithPopup } from 'firebase/auth';
-import { User, Mail, Calendar, Shield, Zap, MessageSquare, Brain, ArrowLeft, LogOut, Settings, Trash2, CheckCircle2, X, AlertTriangle, Bell, Globe, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { User, Mail, Calendar, Shield, Zap, MessageSquare, Brain, ArrowLeft, LogOut, Settings, Trash2, CheckCircle2, X, AlertTriangle, Bell, Globe, Eye, EyeOff, Loader2, ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { UserStats, UserProfile } from '../types';
@@ -17,10 +17,11 @@ type ModalType = 'none' | 'general' | 'privacy' | 'delete';
 
 export function ProfilePage({ onBack, isDarkMode, onUpgrade }: ProfilePageProps) {
   const user = auth.currentUser;
-  const [stats, setStats] = useState<UserStats>({
+  const [stats, setStats] = useState({
     totalSessions: 0,
     totalMessages: 0,
-    totalMemories: 0
+    totalMemories: 0,
+    totalImages: 0
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -42,10 +43,11 @@ export function ProfilePage({ onBack, isDarkMode, onUpgrade }: ProfilePageProps)
     const fetchProfileAndStats = async () => {
       try {
         // Fetch user profile for preferences
+        let userData: UserProfile | null = null;
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
-            const userData = userDoc.data() as UserProfile;
+            userData = userDoc.data() as UserProfile;
             setProfile(userData);
             if (userData.preferences) {
               setPrefs(userData.preferences);
@@ -53,7 +55,6 @@ export function ProfilePage({ onBack, isDarkMode, onUpgrade }: ProfilePageProps)
           }
         } catch (err) {
           console.error("Error fetching user profile:", err);
-          // Don't throw here, let other stats load if possible
         }
 
         // Fetch sessions count
@@ -78,8 +79,9 @@ export function ProfilePage({ onBack, isDarkMode, onUpgrade }: ProfilePageProps)
 
         setStats({
           totalSessions: sessionCount,
-          totalMessages: sessionCount * 12, // Placeholder estimation
-          totalMemories: memoryCount
+          totalMessages: userData?.messageCount || 0,
+          totalMemories: memoryCount,
+          totalImages: (userData as any)?.imageCount || 0
         });
       } catch (error) {
         console.error("Error fetching profile and stats:", error);
@@ -198,22 +200,28 @@ export function ProfilePage({ onBack, isDarkMode, onUpgrade }: ProfilePageProps)
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
           <StatCard 
-            icon={<MessageSquare className="text-blue-500" />}
-            label="Total Chats"
+            icon={<MessageSquare className="text-blue-500" size={18} />}
+            label="Chats"
             value={stats.totalSessions}
             isLoading={isLoading}
           />
           <StatCard 
-            icon={<Zap className="text-amber-500" />}
-            label="AI Messages"
+            icon={<Zap className="text-amber-500" size={18} />}
+            label="Messages"
             value={stats.totalMessages}
             isLoading={isLoading}
           />
           <StatCard 
-            icon={<Brain className="text-purple-500" />}
-            label="Saved Memories"
+            icon={<ImageIcon className="text-emerald-500" size={18} />}
+            label="Images"
+            value={stats.totalImages}
+            isLoading={isLoading}
+          />
+          <StatCard 
+            icon={<Brain className="text-purple-500" size={18} />}
+            label="Memories"
             value={stats.totalMemories}
             isLoading={isLoading}
           />

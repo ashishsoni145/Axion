@@ -4,7 +4,7 @@ import { Message, ChatSession, ModelProvider } from '../types';
 import { MessageItem } from './MessageItem';
 import { generateChatResponse, generateImage, generateVideo, generateSpeech } from '../services/axion';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
-import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Cpu } from 'lucide-react';
@@ -224,35 +224,62 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
       let mediaUrl = "";
 
       const lowerPrompt = currentInput.toLowerCase();
-      const isImageRequest = /generate.*image|create.*image|draw|make.*image|generate.*picture|create.*picture|show.*image|show.*picture/i.test(lowerPrompt);
-      const isVideoRequest = lowerPrompt.includes('generate video') || lowerPrompt.includes('create video');
+      const isImageRequest = /generate.*image|create.*image|draw|make.*image|generate.*picture|create.*picture|show.*image|show.*picture|paint|sketch|imagine/i.test(lowerPrompt);
+      const isVideoRequest = /generate.*video|create.*video|make.*video|produce.*video|animate|video.*of/i.test(lowerPrompt);
 
       if (isImageRequest || isVideoRequest) {
-        if (userProfile?.subscription !== 'pro') {
-          setUpgradeReason({
-            title: 'Pro Feature',
-            description: "Image and Video generation are exclusive to Axion Pro users. Upgrade now to bring your ideas to life!"
-          });
-          setShowUpgradeModal(true);
-          setIsLoading(false);
-          return;
+        const isPro = userProfile?.subscription === 'pro';
+        const imageCount = userProfile?.imageCount || 0;
+        
+        if (!isPro) {
+          if (isVideoRequest) {
+            setUpgradeReason({
+              title: 'Pro Feature',
+              description: "Video generation is exclusive to Axion Pro users. Upgrade now to bring your ideas to life!"
+            });
+            setShowUpgradeModal(true);
+            setIsLoading(false);
+            return;
+          }
+          
+          if (isImageRequest && imageCount >= 5) {
+            setUpgradeReason({
+              title: 'Free Trial Ended',
+              description: "You've used all 5 of your free image generations. Upgrade to Axion Pro for unlimited creative power!"
+            });
+            setShowUpgradeModal(true);
+            setIsLoading(false);
+            return;
+          }
         }
 
         if (isImageRequest) {
-          // Clean the prompt for the image generator (remove "generate an image of", etc.)
+          // Clean the prompt for the image generator
           const cleanPrompt = currentInput
             .replace(/generate.*image\s+of\s+/i, '')
             .replace(/create.*image\s+of\s+/i, '')
             .replace(/draw\s+(a\s+)?/i, '')
             .replace(/make.*image\s+of\s+/i, '')
+            .replace(/paint\s+(a\s+)?/i, '')
+            .replace(/sketch\s+(a\s+)?/i, '')
             .trim();
 
           mediaUrl = await generateImage(cleanPrompt || currentInput);
-          responseText = `Here is the image I generated for: "${cleanPrompt || currentInput}"`;
+          responseText = `🎨 Here is the image I generated for: "${cleanPrompt || currentInput}"`;
           responseType = 'image';
         } else {
+          // Video generation requires API key selection
+          const aistudio = (window as any).aistudio;
+          if (aistudio) {
+            const hasKey = await aistudio.hasSelectedApiKey();
+            if (!hasKey) {
+              await aistudio.openSelectKey();
+              // The platform will prompt the user. We assume they select a key.
+            }
+          }
+
           mediaUrl = await generateVideo(currentInput);
-          responseText = `Here is the video I generated for: "${currentInput}"`;
+          responseText = `🎬 Here is the video I generated for: "${currentInput}"`;
           responseType = 'video';
         }
       } else {
@@ -268,7 +295,16 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
           useThinking,
           useSearch,
           useMaps,
-          location: useMaps ? { latitude: 37.7749, longitude: -122.4194 } : undefined, // Default SF for demo
+          location: useMaps ? await new Promise((resolve) => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+                () => resolve({ latitude: 37.7749, longitude: -122.4194 }) // Fallback to SF
+              );
+            } else {
+              resolve({ latitude: 37.7749, longitude: -122.4194 });
+            }
+          }) : undefined,
           attachment: currentAttachment ? {
             mimeType: currentAttachment.file.type,
             data: currentAttachment.preview.split(',')[1]
@@ -300,35 +336,39 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
         }
       }
 
-      // 4. Add model response to Firestore
-      const modelMsgData: any = {
-        sessionId,
-        userId: auth.currentUser?.uid,
-        role: 'model',
-        content: responseText,
-        type: responseType,
-        createdAt: serverTimestamp()
-      };
-      if (mediaUrl) {
-        if (mediaUrl.length > 1000000) {
-          modelMsgData.mediaUrl = "IMAGE_TOO_LARGE";
-          modelMsgData.content = (modelMsgData.content || "") + "\n\n(Note: Generated image was too large to save in history)";
-        } else {
-          modelMsgData.mediaUrl = mediaUrl;
+        // 4. Add model response to Firestore
+        const modelMsgData: any = {
+          sessionId,
+          userId: auth.currentUser?.uid,
+          role: 'model',
+          content: responseText,
+          type: responseType,
+          createdAt: serverTimestamp()
+        };
+        if (mediaUrl) {
+          if (mediaUrl.length > 1000000) {
+            modelMsgData.mediaUrl = "IMAGE_TOO_LARGE";
+            modelMsgData.content = (modelMsgData.content || "") + "\n\n(Note: Generated image was too large to save in history)";
+          } else {
+            modelMsgData.mediaUrl = mediaUrl;
+          }
         }
-      }
 
-      try {
-        await addDoc(collection(db, 'sessions', sessionId, 'messages'), modelMsgData);
-        
-        // Increment message count
-        if (auth.currentUser) {
-          const userRef = doc(db, 'users', auth.currentUser.uid);
-          await updateDoc(userRef, {
-            messageCount: (userProfile?.messageCount || 0) + 1
-          });
-        }
-      } catch (error) {
+        try {
+          await addDoc(collection(db, 'sessions', sessionId, 'messages'), modelMsgData);
+          
+          // Increment message count and image count
+          if (auth.currentUser) {
+            const userRef = doc(db, 'users', auth.currentUser.uid);
+            const updates: any = {
+              messageCount: increment(1)
+            };
+            if (responseType === 'image') {
+              updates.imageCount = increment(1);
+            }
+            await updateDoc(userRef, updates);
+          }
+        } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, `sessions/${sessionId}/messages`);
       }
 
@@ -545,11 +585,29 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
               }}
               className={cn(
                 "p-2 text-zinc-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl transition-colors",
-                (input.toLowerCase().includes('generate image') || input.toLowerCase().includes('create image') || input.toLowerCase().includes('draw')) && "text-emerald-500"
+                /generate.*image|create.*image|draw|make.*image|paint|sketch/i.test(input) && "text-emerald-500"
               )}
               title="Generate Image"
             >
               <ImageIcon size={18} className="sm:w-5 sm:h-5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (input.trim()) {
+                  handleSend();
+                } else {
+                  setInput('Generate a video of ');
+                }
+              }}
+              className={cn(
+                "p-2 text-zinc-400 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-xl transition-colors",
+                /generate.*video|create.*video|make.*video|animate/i.test(input) && "text-blue-500"
+              )}
+              title="Generate Video"
+            >
+              <Video size={18} className="sm:w-5 sm:h-5" />
             </button>
 
             <button
