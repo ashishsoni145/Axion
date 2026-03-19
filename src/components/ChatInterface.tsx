@@ -172,16 +172,19 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
       let mediaUrl = "";
 
       const lowerPrompt = currentInput.toLowerCase();
-      const isImageRequest = lowerPrompt.includes('generate image') || 
-                            lowerPrompt.includes('create image') || 
-                            lowerPrompt.includes('draw') || 
-                            lowerPrompt.includes('make an image') ||
-                            lowerPrompt.includes('generate a picture') ||
-                            lowerPrompt.includes('create a picture');
+      const isImageRequest = /generate.*image|create.*image|draw|make.*image|generate.*picture|create.*picture|show.*image|show.*picture/i.test(lowerPrompt);
 
       if (isImageRequest) {
-        mediaUrl = await generateImage(currentInput);
-        responseText = `Here is the image I generated for: "${currentInput}"`;
+        // Clean the prompt for the image generator (remove "generate an image of", etc.)
+        const cleanPrompt = currentInput
+          .replace(/generate.*image\s+of\s+/i, '')
+          .replace(/create.*image\s+of\s+/i, '')
+          .replace(/draw\s+(a\s+)?/i, '')
+          .replace(/make.*image\s+of\s+/i, '')
+          .trim();
+
+        mediaUrl = await generateImage(cleanPrompt || currentInput);
+        responseText = `Here is the image I generated for: "${cleanPrompt || currentInput}"`;
         responseType = 'image';
       } else if (lowerPrompt.includes('generate video') || lowerPrompt.includes('create video')) {
         mediaUrl = await generateVideo(currentInput);
