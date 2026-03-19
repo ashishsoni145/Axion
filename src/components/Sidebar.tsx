@@ -11,11 +11,12 @@ interface SidebarProps {
   onSelectSession: (id: string) => void;
   onNewChat: () => void;
   onDeleteSession: (id: string) => void;
+  onOpenProfile: () => void;
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession, isOpen, onClose }: SidebarProps) {
+export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat, onDeleteSession, onOpenProfile, isOpen, onClose }: SidebarProps) {
   const user = auth.currentUser;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -201,26 +202,28 @@ export function Sidebar({ sessions, currentSessionId, onSelectSession, onNewChat
       </div>
 
       <div className="p-4 border-t border-zinc-800">
-        <div className="flex items-center gap-3 px-2 py-3">
+        <button 
+          onClick={onOpenProfile}
+          className="w-full flex items-center gap-3 px-2 py-3 hover:bg-zinc-800 rounded-xl transition-colors group"
+        >
           {user?.photoURL ? (
-            <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
+            <img src={user.photoURL} alt="" className="w-8 h-8 rounded-full group-hover:ring-2 group-hover:ring-emerald-500 transition-all" referrerPolicy="no-referrer" />
           ) : (
-            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-zinc-700 transition-colors">
               <UserIcon size={16} />
             </div>
           )}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user?.displayName || 'User'}</p>
+          <div className="flex-1 min-w-0 text-left">
+            <p className="text-sm font-medium truncate group-hover:text-emerald-400 transition-colors">{user?.displayName || 'User'}</p>
             <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
           </div>
-          <button
-            onClick={() => logout()}
-            className="p-2 text-zinc-500 hover:text-zinc-200 transition-colors"
-            title="Sign Out"
-          >
+          <div className="p-2 text-zinc-500 hover:text-zinc-200 transition-colors" onClick={(e) => {
+            e.stopPropagation();
+            logout();
+          }}>
             <LogOut size={18} />
-          </button>
-        </div>
+          </div>
+        </button>
       </div>
     </div>
   </>

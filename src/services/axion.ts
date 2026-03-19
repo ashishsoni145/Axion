@@ -85,14 +85,19 @@ export async function generateChatResponse(
     location?: { latitude: number; longitude: number };
     attachment?: { mimeType: string; data: string };
     userContext?: string;
+    language?: string;
   } = {}
 ) {
   // Auto-routing logic: Let Axion choose the best provider
   let provider: ModelProvider = options.provider || "gemini";
   
-  const systemPrompt = options.userContext 
+  let systemPrompt = options.userContext 
     ? `${AXION_SYSTEM_PROMPT}\n\n[USER MEMORY BANK]\n${options.userContext}\n\nUse the above information to provide a more personalized and helpful experience. If you learn something new about the user, you can acknowledge it.`
     : AXION_SYSTEM_PROMPT;
+
+  if (options.language) {
+    systemPrompt += `\n\nIMPORTANT: The user's preferred language is ${options.language}. ALWAYS respond in ${options.language} unless specifically asked otherwise.`;
+  }
 
   if (!options.provider) {
     const hasOpenAI = !!process.env.OPENAI_API_KEY;

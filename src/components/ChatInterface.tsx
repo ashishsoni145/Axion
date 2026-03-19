@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Image as ImageIcon, Video, Mic, Sparkles, Search, MapPin, Brain, Loader2, Paperclip, X, Moon, Sun, Bot as BotIcon, Menu, Key } from 'lucide-react';
+import { Send, Image as ImageIcon, Video, Mic, Sparkles, Search, MapPin, Brain, Loader2, Paperclip, X, Moon, Sun, Bot as BotIcon, Menu, Key, Zap } from 'lucide-react';
 import { Message, ChatSession, ModelProvider } from '../types';
 import { MessageItem } from './MessageItem';
 import { generateChatResponse, generateImage, generateVideo, generateSpeech } from '../services/axion';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 import { Cpu } from 'lucide-react';
 
 interface ChatInterfaceProps {
@@ -13,9 +14,10 @@ interface ChatInterfaceProps {
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
   onOpenSidebar?: () => void;
+  onUpgrade: () => void;
 }
 
-export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenSidebar }: ChatInterfaceProps) {
+export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenSidebar, onUpgrade }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,6 +27,12 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
   const [memories, setMemories] = useState<{ id: string, fact: string }[]>([]);
   const [attachment, setAttachment] = useState<{ type: 'image' | 'video' | 'audio', file: File, preview: string } | null>(null);
   const [thinkingText, setThinkingText] = useState('');
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<{ title: string, description: string }>({
+    title: 'Limit Reached',
+    description: "You've used all 50 of your free messages. Upgrade to Axion Pro to continue chatting and unlock all features!"
+  });
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -124,9 +132,46 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
     return () => unsubscribe();
   }, [auth.currentUser]);
 
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    
+    const unsubscribe = onSnapshot(doc(db, 'users', auth.currentUser.uid), (doc) => {
+      if (doc.exists()) {
+        setUserProfile(doc.data());
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth.currentUser]);
+
+  const checkProFeature = (featureName: string) => {
+    if (userProfile?.subscription !== 'pro') {
+      setUpgradeReason({
+        title: 'Pro Feature',
+        description: `The ${featureName} feature is only available for Axion Pro users. Upgrade now to unlock advanced AI capabilities!`
+      });
+      setShowUpgradeModal(true);
+      return false;
+    }
+    return true;
+  };
+
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if ((!input.trim() && !attachment) || isLoading) return;
+
+    // Check usage limits for free users
+    if (userProfile?.subscription !== 'pro') {
+      const count = userProfile?.messageCount || 0;
+      if (count >= 50) {
+        setUpgradeReason({
+          title: 'Limit Reached',
+          description: "You've used all 50 of your free messages. Upgrade to Axion Pro to continue chatting and unlock all features!"
+        });
+        setShowUpgradeModal(true);
+        return;
+      }
+    }
 
     const userMessageContent = input.trim();
     const currentInput = input;
@@ -180,23 +225,36 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
 
       const lowerPrompt = currentInput.toLowerCase();
       const isImageRequest = /generate.*image|create.*image|draw|make.*image|generate.*picture|create.*picture|show.*image|show.*picture/i.test(lowerPrompt);
+      const isVideoRequest = lowerPrompt.includes('generate video') || lowerPrompt.includes('create video');
 
-      if (isImageRequest) {
-        // Clean the prompt for the image generator (remove "generate an image of", etc.)
-        const cleanPrompt = currentInput
-          .replace(/generate.*image\s+of\s+/i, '')
-          .replace(/create.*image\s+of\s+/i, '')
-          .replace(/draw\s+(a\s+)?/i, '')
-          .replace(/make.*image\s+of\s+/i, '')
-          .trim();
+      if (isImageRequest || isVideoRequest) {
+        if (userProfile?.subscription !== 'pro') {
+          setUpgradeReason({
+            title: 'Pro Feature',
+            description: "Image and Video generation are exclusive to Axion Pro users. Upgrade now to bring your ideas to life!"
+          });
+          setShowUpgradeModal(true);
+          setIsLoading(false);
+          return;
+        }
 
-        mediaUrl = await generateImage(cleanPrompt || currentInput);
-        responseText = `Here is the image I generated for: "${cleanPrompt || currentInput}"`;
-        responseType = 'image';
-      } else if (lowerPrompt.includes('generate video') || lowerPrompt.includes('create video')) {
-        mediaUrl = await generateVideo(currentInput);
-        responseText = `Here is the video I generated for: "${currentInput}"`;
-        responseType = 'video';
+        if (isImageRequest) {
+          // Clean the prompt for the image generator (remove "generate an image of", etc.)
+          const cleanPrompt = currentInput
+            .replace(/generate.*image\s+of\s+/i, '')
+            .replace(/create.*image\s+of\s+/i, '')
+            .replace(/draw\s+(a\s+)?/i, '')
+            .replace(/make.*image\s+of\s+/i, '')
+            .trim();
+
+          mediaUrl = await generateImage(cleanPrompt || currentInput);
+          responseText = `Here is the image I generated for: "${cleanPrompt || currentInput}"`;
+          responseType = 'image';
+        } else {
+          mediaUrl = await generateVideo(currentInput);
+          responseText = `Here is the video I generated for: "${currentInput}"`;
+          responseType = 'video';
+        }
       } else {
         const history = messages.map(m => ({
           role: m.role,
@@ -204,6 +262,7 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
         }));
 
         const userContext = memories.map(m => `- ${m.fact}`).join('\n');
+        const language = userProfile?.preferences?.language || 'English';
 
         const response = await generateChatResponse(currentInput, history, {
           useThinking,
@@ -214,7 +273,8 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
             mimeType: currentAttachment.file.type,
             data: currentAttachment.preview.split(',')[1]
           } : undefined,
-          userContext
+          userContext,
+          language
         });
         responseText = response.text;
 
@@ -260,6 +320,14 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
 
       try {
         await addDoc(collection(db, 'sessions', sessionId, 'messages'), modelMsgData);
+        
+        // Increment message count
+        if (auth.currentUser) {
+          const userRef = doc(db, 'users', auth.currentUser.uid);
+          await updateDoc(userRef, {
+            messageCount: (userProfile?.messageCount || 0) + 1
+          });
+        }
       } catch (error) {
         handleFirestoreError(error, OperationType.CREATE, `sessions/${sessionId}/messages`);
       }
@@ -318,9 +386,13 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
             {isDarkMode ? <Sun size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Moon size={16} className="sm:w-[18px] sm:h-[18px]" />}
           </button>
           <button
-            onClick={() => setUseThinking(!useThinking)}
+            onClick={() => {
+              if (checkProFeature('Thinking Mode')) {
+                setUseThinking(!useThinking);
+              }
+            }}
             className={cn(
-              "p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 sm:gap-2 text-xs font-medium",
+              "p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 sm:gap-2 text-xs font-medium relative",
               useThinking 
                 ? "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" 
                 : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
@@ -329,6 +401,9 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
           >
             <Brain size={16} />
             <span className="hidden md:inline">Thinking</span>
+            {userProfile?.subscription !== 'pro' && (
+              <div className="absolute -top-1 -right-1 bg-amber-500 text-[8px] text-white px-1 rounded-full">PRO</div>
+            )}
           </button>
           <button
             onClick={() => setUseSearch(!useSearch)}
@@ -342,15 +417,22 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
             <span className="hidden md:inline">Search</span>
           </button>
           <button
-            onClick={() => setUseMaps(!useMaps)}
+            onClick={() => {
+              if (checkProFeature('Advanced Maps')) {
+                setUseMaps(!useMaps);
+              }
+            }}
             className={cn(
-              "p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 sm:gap-2 text-xs font-medium",
+              "p-1.5 sm:p-2 rounded-lg transition-all flex items-center gap-1 sm:gap-2 text-xs font-medium relative",
               useMaps ? "bg-red-100 text-red-700" : "bg-zinc-100 text-zinc-500 hover:bg-zinc-200"
             )}
             title="Maps Grounding"
           >
             <MapPin size={16} />
             <span className="hidden md:inline">Maps</span>
+            {userProfile?.subscription !== 'pro' && (
+              <div className="absolute -top-1 -right-1 bg-amber-500 text-[8px] text-white px-1 rounded-full">PRO</div>
+            )}
           </button>
         </div>
       </div>
@@ -413,6 +495,19 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
 
       <div className="p-3 sm:p-6 border-t border-zinc-100 dark:border-zinc-800">
         <form onSubmit={handleSend} className="max-w-4xl mx-auto relative w-full">
+          {userProfile?.subscription !== 'pro' && (
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 transition-all duration-500" 
+                  style={{ width: `${Math.min(((userProfile?.messageCount || 0) / 50) * 100, 100)}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider whitespace-nowrap">
+                {userProfile?.messageCount || 0} / 50 Free Messages
+              </span>
+            </div>
+          )}
           {attachment && (
             <div className="absolute bottom-full mb-4 left-0 bg-white dark:bg-zinc-900 p-2 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-800 flex items-center gap-3">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-zinc-100 dark:bg-zinc-800">
@@ -504,6 +599,48 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
           </p>
         </form>
       </div>
+
+      <AnimatePresence>
+        {showUpgradeModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden"
+            >
+              <div className="p-8 text-center space-y-6">
+                <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center text-amber-500 mx-auto">
+                  <Zap size={40} />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{upgradeReason.title}</h3>
+                  <p className="text-zinc-500 dark:text-zinc-400">
+                    {upgradeReason.description}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => {
+                      setShowUpgradeModal(false);
+                      onUpgrade();
+                    }}
+                    className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200 dark:shadow-none"
+                  >
+                    Upgrade to Pro
+                  </button>
+                  <button
+                    onClick={() => setShowUpgradeModal(false)}
+                    className="w-full py-4 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 font-medium transition-colors"
+                  >
+                    Maybe Later
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

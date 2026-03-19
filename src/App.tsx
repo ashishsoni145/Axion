@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { auth, loginWithGoogle, db, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { Sidebar } from './components/Sidebar';
 import { ChatInterface } from './components/ChatInterface';
+import { ProfilePage } from './components/ProfilePage';
+import { PaymentPage } from './components/PaymentPage';
 import { ChatSession } from './types';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { LogIn, Sparkles, Loader2, Menu, Sun, Moon } from 'lucide-react';
+import { LogIn, Sparkles, Loader2, Menu, Sun, Moon, User as UserIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './lib/utils';
 
@@ -17,6 +19,7 @@ export default function App() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [view, setView] = useState<'chat' | 'profile' | 'payment'>('chat');
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || 
@@ -40,13 +43,31 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          await setDoc(doc(db, 'users', user.uid), {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            updatedAt: serverTimestamp()
-          }, { merge: true });
+          const userRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userRef);
+          
+          if (!userDoc.exists()) {
+            await setDoc(userRef, {
+              uid: user.uid,
+              email: user.email,
+              displayName: user.displayName,
+              photoURL: user.photoURL,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+              subscription: 'free',
+              messageCount: 0,
+              preferences: {
+                notifications: true,
+                language: 'English',
+                publicProfile: false,
+                dataTraining: true
+              }
+            });
+          } else {
+            await updateDoc(userRef, {
+              updatedAt: serverTimestamp()
+            });
+          }
         } catch (error) {
           console.error("Error updating user profile:", error);
         }
@@ -181,14 +202,30 @@ export default function App() {
                 onDeleteSession={handleDeleteSession}
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
+                onOpenProfile={() => {
+                  setView('profile');
+                  setIsSidebarOpen(false);
+                }}
               />
               <main className="flex-1 h-full relative flex flex-col min-w-0">
-                {currentSessionId ? (
+                {view === 'profile' ? (
+                  <ProfilePage 
+                    onBack={() => setView('chat')} 
+                    isDarkMode={isDarkMode}
+                    onUpgrade={() => setView('payment')}
+                  />
+                ) : view === 'payment' ? (
+                  <PaymentPage 
+                    onBack={() => setView('chat')}
+                    onSuccess={() => setView('chat')}
+                  />
+                ) : currentSessionId ? (
                   <ChatInterface 
                     sessionId={currentSessionId} 
                     isDarkMode={isDarkMode}
                     onToggleDarkMode={() => setIsDarkMode(!isDarkMode)}
                     onOpenSidebar={() => setIsSidebarOpen(true)}
+                    onUpgrade={() => setView('payment')}
                   />
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center p-8 text-center space-y-6 bg-white dark:bg-zinc-950">

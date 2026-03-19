@@ -27,4 +27,18 @@ export interface UserProfile {
   displayName?: string;
   photoURL?: string;
   createdAt: any;
+  subscription?: 'free' | 'pro';
+  messageCount?: number;
+  preferences?: {
+    notifications: boolean;
+    language: string;
+    publicProfile: boolean;
+    dataTraining: boolean;
+  };
+}
+
+export interface UserStats {
+  totalSessions: number;
+  totalMessages: number;
+  totalMemories: number;
 }

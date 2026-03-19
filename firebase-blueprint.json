@@ -9,7 +9,18 @@
         "email": { "type": "string", "format": "email", "description": "User's email address." },
         "displayName": { "type": "string", "description": "User's display name." },
         "photoURL": { "type": "string", "description": "URL to user's profile picture." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "When the profile was created." }
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the profile was created." },
+        "subscription": { "type": "string", "enum": ["free", "pro"], "description": "User's subscription tier." },
+        "messageCount": { "type": "integer", "description": "Total messages sent by the user." },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "notifications": { "type": "boolean" },
+            "language": { "type": "string" },
+            "publicProfile": { "type": "boolean" },
+            "dataTraining": { "type": "boolean" }
+          }
+        }
       },
       "required": ["uid", "email"]
     },
