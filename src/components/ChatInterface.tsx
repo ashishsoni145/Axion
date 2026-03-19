@@ -148,7 +148,14 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
       };
       
       if (currentAttachment) {
-        userMsgData.mediaUrl = currentAttachment.preview;
+        // Check size before saving (Firestore limit is 1MB)
+        // Base64 is ~1.37x original size. 1MB base64 is ~700KB original.
+        if (currentAttachment.preview.length > 1000000) {
+          userMsgData.mediaUrl = "IMAGE_TOO_LARGE";
+          userMsgData.content = (userMsgData.content || "") + "\n\n(Note: Attachment was too large to save in history)";
+        } else {
+          userMsgData.mediaUrl = currentAttachment.preview;
+        }
       }
       
       try {
@@ -243,7 +250,12 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
         createdAt: serverTimestamp()
       };
       if (mediaUrl) {
-        modelMsgData.mediaUrl = mediaUrl;
+        if (mediaUrl.length > 1000000) {
+          modelMsgData.mediaUrl = "IMAGE_TOO_LARGE";
+          modelMsgData.content = (modelMsgData.content || "") + "\n\n(Note: Generated image was too large to save in history)";
+        } else {
+          modelMsgData.mediaUrl = mediaUrl;
+        }
       }
 
       try {
@@ -284,8 +296,8 @@ export function ChatInterface({ sessionId, isDarkMode, onToggleDarkMode, onOpenS
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white dark:bg-zinc-950 transition-colors">
-      <div className="h-16 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between px-4 sm:px-6 shrink-0">
+    <div className="flex-1 flex flex-col h-full min-w-0 bg-white dark:bg-zinc-950 transition-colors overflow-hidden">
+      <div className="h-14 sm:h-16 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between px-4 sm:px-6 shrink-0">
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenSidebar}

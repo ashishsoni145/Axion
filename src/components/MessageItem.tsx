@@ -64,7 +64,7 @@ export function MessageItem({ message, isNew }: MessageItemProps) {
         {isModel ? <Bot size={18} /> : <User size={18} />}
       </div>
 
-      <div className="flex-1 min-w-0 space-y-3">
+      <div className="flex-1 min-w-0 space-y-3 overflow-hidden">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
             {isModel ? 'Axion AI' : 'You'}
@@ -176,15 +176,23 @@ export function MessageItem({ message, isNew }: MessageItemProps) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5 }}
-              className="space-y-2"
+              className="space-y-2 overflow-hidden"
             >
-              <img 
-                src={message.mediaUrl} 
-                alt={isModel ? "Generated" : "Uploaded"} 
-                className="rounded-2xl max-w-full h-auto shadow-lg border border-zinc-200 dark:border-zinc-800"
-                referrerPolicy="no-referrer"
-              />
-              {message.content && <p className="text-sm italic text-zinc-500 dark:text-zinc-400">{message.content}</p>}
+              {message.mediaUrl === 'IMAGE_TOO_LARGE' ? (
+                <div className="p-6 rounded-2xl bg-zinc-100 dark:bg-zinc-800 border border-dashed border-zinc-300 dark:border-zinc-700 text-center">
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    🖼️ Image was too large to store in chat history.
+                  </p>
+                </div>
+              ) : (
+                <img 
+                  src={message.mediaUrl} 
+                  alt={isModel ? "Generated" : "Uploaded"} 
+                  className="rounded-2xl max-w-full h-auto shadow-lg border border-zinc-200 dark:border-zinc-800 object-contain"
+                  referrerPolicy="no-referrer"
+                />
+              )}
+              {message.content && <p className="text-sm italic text-zinc-500 dark:text-zinc-400 break-words">{message.content}</p>}
             </motion.div>
           )}
 

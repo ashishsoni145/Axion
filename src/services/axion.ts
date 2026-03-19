@@ -219,7 +219,7 @@ export async function generateImage(prompt: string, config: { aspectRatio?: stri
     config: {
       imageConfig: {
         aspectRatio: config.aspectRatio || "1:1",
-        imageSize: config.imageSize || "1K"
+        imageSize: config.imageSize || "512px"
       }
     }
   }));
