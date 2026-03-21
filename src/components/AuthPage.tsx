@@ -89,12 +89,22 @@ export function AuthPage({ isDarkMode, onToggleDarkMode }: AuthPageProps) {
   };
 
   return (
-      <div className="min-h-screen w-full flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950 transition-colors">
+      <div className="min-h-[100dvh] w-full flex flex-col items-center justify-center p-4 py-8 sm:p-8 bg-zinc-50 dark:bg-zinc-950 transition-colors relative">
       
+      {/* Theme Toggle - Moved outside the card for better mobile layout */}
+      <div className="absolute top-4 right-4 sm:top-8 sm:right-8 z-50">
+        <button
+          onClick={onToggleDarkMode}
+          className="p-2.5 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shadow-sm"
+        >
+          {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+      </div>
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl p-6 sm:p-10 border border-zinc-200 dark:border-zinc-800 transition-colors relative overflow-hidden"
+        className="max-w-md w-full bg-white dark:bg-zinc-900 rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl p-6 sm:p-10 border border-zinc-200 dark:border-zinc-800 transition-colors relative overflow-hidden my-auto z-10"
       >
         {/* Background Accents */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
@@ -107,12 +117,12 @@ export function AuthPage({ isDarkMode, onToggleDarkMode }: AuthPageProps) {
               <Sparkles size={32} />
             </div>
             <div className="space-y-1">
-              <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
                 {mode === 'login' && 'Welcome Back'}
                 {mode === 'signup' && 'Create Account'}
                 {mode === 'forgot' && 'Reset Password'}
               </h1>
-              <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+              <p className="text-zinc-500 dark:text-zinc-400 text-xs sm:text-sm">
                 {mode === 'login' && 'Sign in to Axion to continue'}
                 {mode === 'signup' && 'Join Axion for intelligent conversations'}
                 {mode === 'forgot' && 'Enter your email to receive a reset link'}
@@ -278,19 +288,9 @@ export function AuthPage({ isDarkMode, onToggleDarkMode }: AuthPageProps) {
             </div>
           </div>
         </div>
-
-        {/* Theme Toggle */}
-        <div className="absolute top-6 right-6">
-          <button
-            onClick={onToggleDarkMode}
-            className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
-          >
-            {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-        </div>
       </motion.div>
       
-      <p className="fixed bottom-8 text-center text-[10px] sm:text-xs text-zinc-400 dark:text-zinc-500 max-w-xs leading-relaxed">
+      <p className="mt-8 text-center text-[10px] sm:text-xs text-zinc-400 dark:text-zinc-500 max-w-xs leading-relaxed z-10">
         By continuing, you agree to Axion's Terms of Service and Privacy Policy.
       </p>
     </div>
