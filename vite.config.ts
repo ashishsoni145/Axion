@@ -10,6 +10,18 @@ export default defineConfig(({mode}) => {
       react(), 
       tailwindcss()
     ],
+    build: {
+      chunkSizeWarningLimit: 800,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+            ai: ['@google/genai', 'openai']
+          }
+        }
+      }
+    },
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || ''),
       'process.env.OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY || ''),
